@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=./node_modules/@xcpc/plugin-sdk/manifest.schema.json
+id = "profile-card"
+name = "选手名片"
+version = "0.1.0"
+description = "生成精致段位色 Codeforces / AtCoder 社交分享名片图片"
+entry = "index.js"
+ui_entry = "ui.html"
+capabilities = ["tool", "commands"]
+
+[permissions]
+domains = ["codeforces.com", "userpic.codeforces.org", "atcoder.jp", "kenkoooo.com"]
+workspace_read = false
+
+[[tools]]
+id = "fetch_profile"
+name = "拉取选手数据"
+description = "按平台和 Handle 拉取公开数据，生成选手名片所需统计"
+
+[[tools.inputs]]
+name = "platform"
+label = "平台"
+kind = "select"
+options = ["codeforces", "atcoder"]
+default = "codeforces"
+required = true
+
+[[tools.inputs]]
+name = "handle"
+label = "Handle"
+kind = "text"
+placeholder = "jiangly"
+required = true
+
+[[tools.inputs]]
+name = "refresh"
+label = "强制刷新缓存"
+kind = "boolean"
+default = false
+
+[[commands]]
+id = "open_profile_card"
+title = "打开选手名片"
+context = "global"

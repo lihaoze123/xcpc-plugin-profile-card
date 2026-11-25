@@ -1,0 +1,16 @@
+{
+  "name": "xcpc-plugin-profile-card",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@xcpc/plugin-sdk": "file:../2026-11-19-statement/packages/plugin-sdk",
+    "typescript": "^5.7.0",
+    "vite": "^6.0.0"
+  }
+}
