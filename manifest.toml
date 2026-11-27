@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=./node_modules/@xcpc/plugin-sdk/manifest.schema.json
+# yaml-language-server: $schema=./node_modules/@xcpc-workstation/plugin-sdk/manifest.schema.json
 id = "profile-card"
 name = "选手名片"
 version = "0.1.0"

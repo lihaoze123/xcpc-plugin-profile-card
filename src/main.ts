@@ -1,5 +1,5 @@
-import { getXcpc, type XcpcOjAccount } from "@xcpc/plugin-sdk/ui";
-import type { ToolExecutionResult } from "@xcpc/plugin-sdk/host";
+import { getXcpc, type XcpcOjAccount } from "@xcpc-workstation/plugin-sdk/ui";
+import type { ToolExecutionResult } from "@xcpc-workstation/plugin-sdk/host";
 import { renderProfileCard } from "./cardRenderer";
 import {
   PALETTES,

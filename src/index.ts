@@ -1,7 +1,7 @@
 import type {
   PluginCommandAction,
   ToolExecutionResult,
-} from "@xcpc/plugin-sdk/host";
+} from "@xcpc-workstation/plugin-sdk/host";
 import type {
   DifficultyTier,
   PaletteKey,
