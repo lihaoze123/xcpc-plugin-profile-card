@@ -9,7 +9,12 @@ import type {
   ProfileData,
 } from "./shared";
 import { PALETTE_ORDER } from "./shared";
-import { SVG_CARD_H, SVG_CARD_W, renderProfileCardSvg } from "./svgRenderer";
+import {
+  SVG_CARD_H,
+  SVG_CARD_W,
+  renderProfileBadgeSvg,
+  renderProfileCardSvg,
+} from "./svgRenderer";
 
 const CACHE_TTL_MS = 15 * 60 * 1000;
 const MODELS_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -395,7 +400,11 @@ export function runTool(
   toolId: string,
   inputs: Record<string, unknown>,
 ): ToolExecutionResult {
-  if (toolId !== "fetch_profile" && toolId !== "render_card") {
+  if (
+    toolId !== "fetch_profile" &&
+    toolId !== "render_card" &&
+    toolId !== "render_badge"
+  ) {
     throw new Error(`Unknown tool: ${toolId}`);
   }
 
@@ -413,6 +422,32 @@ export function runTool(
   const ratingText = profile.rating != null ? String(profile.rating) : "Unrated";
   const maxText = profile.maxRating != null ? String(profile.maxRating) : "—";
   const summary = `${profile.handle} (${platformLabel}) · Rating ${ratingText} (${profile.rankShort}) · ${profile.solvedCount} solved`;
+
+  if (toolId === "render_badge") {
+    const rawStyle = String(inputs.style ?? "flat").toLowerCase().trim();
+    const style = rawStyle === "for-the-badge" ? "for-the-badge" : "flat";
+    const label =
+      typeof inputs.label === "string" && inputs.label.trim()
+        ? inputs.label.trim()
+        : undefined;
+    const badge = renderProfileBadgeSvg(profile, {
+      style,
+      paletteOverride: parsePaletteInput(inputs.palette),
+      label,
+    });
+    return {
+      summary,
+      blocks: [
+        {
+          type: "svg",
+          title: `${profile.handle} · ${platformLabel} Badge`,
+          svg: badge.svg,
+          width: badge.width,
+          height: badge.height,
+        },
+      ],
+    };
+  }
 
   if (toolId === "render_card") {
     const svg = renderProfileCardSvg(profile, {

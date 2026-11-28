@@ -12,6 +12,14 @@ export interface SvgCardOptions {
   showSecondary: boolean;
 }
 
+export type BadgeStyle = "flat" | "for-the-badge";
+
+export interface SvgBadgeOptions {
+  style: BadgeStyle;
+  paletteOverride: PaletteKey;
+  label?: string;
+}
+
 export const SVG_CARD_W = 600;
 export const SVG_CARD_H = 800;
 
@@ -411,4 +419,118 @@ export function renderProfileCardSvg(
     `</g>`,
     `</svg>`,
   ].join("");
+}
+
+function renderMiniPlatformIcon(
+  platform: "codeforces" | "atcoder",
+  x: number,
+  y: number,
+  size: number,
+): string {
+  const s = size / 14;
+  if (platform === "codeforces") {
+    return [
+      `<g transform="translate(${x.toFixed(1)}, ${y.toFixed(1)}) scale(${s.toFixed(3)})">`,
+      `<rect x="1" y="5.5" width="3" height="7.5" rx="0.9" fill="#F5B800"/>`,
+      `<rect x="5.5" y="1.5" width="3" height="11.5" rx="0.9" fill="#4DA3FF"/>`,
+      `<rect x="10" y="4" width="3" height="9" rx="0.9" fill="#FF5A5F"/>`,
+      `</g>`,
+    ].join("");
+  }
+  return [
+    `<g transform="translate(${x.toFixed(1)}, ${y.toFixed(1)}) scale(${s.toFixed(3)})">`,
+    `<path d="M2.2 12 L7 2 L11.8 12 M4 8.8 L10 8.8" fill="none" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
+    `</g>`,
+  ].join("");
+}
+
+export function renderProfileBadgeSvg(
+  profile: ProfileData,
+  opts?: Partial<SvgBadgeOptions>,
+): { svg: string; width: number; height: number } {
+  const style: BadgeStyle =
+    opts?.style === "for-the-badge" ? "for-the-badge" : "flat";
+  const paletteOverride = opts?.paletteOverride ?? "auto";
+  const paletteKey =
+    paletteOverride === "auto" ? profile.paletteKey : paletteOverride;
+  const palette = PALETTES[paletteKey] ?? PALETTES.gray;
+
+  const platformName =
+    profile.platform === "codeforces" ? "Codeforces" : "AtCoder";
+  const rawLabel = opts?.label?.trim() ? opts.label.trim() : platformName;
+  const ratingPart =
+    profile.rating != null
+      ? `${profile.rating} (${profile.rankShort})`
+      : "Unrated";
+  const rawValue = `${profile.handle} · ${ratingPart}`;
+
+  const isFTB = style === "for-the-badge";
+  const labelText = isFTB ? rawLabel.toUpperCase() : rawLabel;
+  const valueText = isFTB ? rawValue.toUpperCase() : rawValue;
+
+  const height = isFTB ? 28 : 20;
+  const rx = isFTB ? 4 : 3;
+  const fontSize = isFTB ? 10.5 : 11;
+  const fontFamily = "Verdana, Geneva, 'DejaVu Sans', sans-serif";
+  const padX = isFTB ? 10 : 7;
+  const iconSize = isFTB ? 14 : 12;
+  const iconGap = isFTB ? 6 : 5;
+  const letterFactor = isFTB ? 1.14 : 1.04;
+
+  const labelTextW = Math.ceil(
+    estimateTextWidth(labelText, fontSize, isFTB) * letterFactor,
+  );
+  const valueTextW = Math.ceil(
+    estimateTextWidth(valueText, fontSize, true) * letterFactor,
+  );
+
+  const leftW = Math.round(padX + iconSize + iconGap + labelTextW + padX);
+  const rightW = Math.round(padX + valueTextW + padX);
+  const totalW = leftW + rightW;
+
+  const iconX = padX;
+  const iconY = (height - iconSize) / 2;
+  const labelX = padX + iconSize + iconGap + labelTextW / 2;
+  const valueX = leftW + rightW / 2;
+  const textY = isFTB ? 17.5 : 14;
+  const letterSpacingAttr = isFTB ? ` letter-spacing="0.7"` : "";
+  const ariaLabel = `${rawLabel}: ${rawValue}`;
+
+  const sheenDef = isFTB
+    ? ""
+    : `<linearGradient id="bSheen" x2="0" y2="100%"><stop offset="0" stop-color="#bbb" stop-opacity=".1"/><stop offset="1" stop-opacity=".1"/></linearGradient>`;
+  const sheenRect = isFTB
+    ? ""
+    : `<rect width="${totalW}" height="${height}" fill="url(#bSheen)"/>`;
+
+  const labelShadow = isFTB
+    ? ""
+    : `<text x="${labelX.toFixed(1)}" y="${textY + 1}" fill="#010101" fill-opacity=".3" text-anchor="middle">${escapeXml(labelText)}</text>`;
+  const valueShadow = isFTB
+    ? ""
+    : `<text x="${valueX.toFixed(1)}" y="${textY + 1}" fill="#010101" fill-opacity=".3" text-anchor="middle" font-weight="700">${escapeXml(valueText)}</text>`;
+
+  const svg = [
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${height}" viewBox="0 0 ${totalW} ${height}" role="img" aria-label="${escapeXml(ariaLabel)}">`,
+    `<title>${escapeXml(ariaLabel)}</title>`,
+    `<defs>`,
+    sheenDef,
+    `<clipPath id="bClip"><rect width="${totalW}" height="${height}" rx="${rx}" fill="#fff"/></clipPath>`,
+    `</defs>`,
+    `<g clip-path="url(#bClip)">`,
+    `<rect width="${leftW}" height="${height}" fill="#555555"/>`,
+    `<rect x="${leftW}" width="${rightW}" height="${height}" fill="${palette.swatch}"/>`,
+    sheenRect,
+    `</g>`,
+    renderMiniPlatformIcon(profile.platform, iconX, iconY, iconSize),
+    `<g fill="#FFFFFF" font-family="${escapeXml(fontFamily)}" font-size="${fontSize}"${letterSpacingAttr}>`,
+    labelShadow,
+    `<text x="${labelX.toFixed(1)}" y="${textY}" text-anchor="middle"${isFTB ? ` font-weight="500"` : ""}>${escapeXml(labelText)}</text>`,
+    valueShadow,
+    `<text x="${valueX.toFixed(1)}" y="${textY}" text-anchor="middle" font-weight="700">${escapeXml(valueText)}</text>`,
+    `</g>`,
+    `</svg>`,
+  ].join("");
+
+  return { svg, width: totalW, height };
 }
