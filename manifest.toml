@@ -1,8 +1,8 @@
 # yaml-language-server: $schema=./node_modules/@xcpc-workstation/plugin-sdk/manifest.schema.json
 id = "profile-card"
 name = "选手名片"
-version = "0.1.0"
-description = "生成精致段位色 Codeforces / AtCoder 社交分享名片图片"
+version = "0.2.0"
+description = "生成精致段位色 Codeforces / AtCoder 社交分享名片，支持桌面端高清 PNG 与无头 CLI / GitHub Actions 矢量 SVG 导出"
 entry = "index.js"
 ui_entry = "ui.html"
 capabilities = ["tool", "commands"]
@@ -30,6 +30,51 @@ label = "Handle"
 kind = "text"
 placeholder = "jiangly"
 required = true
+
+[[tools.inputs]]
+name = "refresh"
+label = "强制刷新缓存"
+kind = "boolean"
+default = false
+
+[[tools]]
+id = "render_card"
+name = "生成选手名片 SVG"
+description = "按平台和 Handle 拉取公开数据，无头生成可嵌入 GitHub README 的段位色名片 SVG"
+
+[[tools.inputs]]
+name = "platform"
+label = "平台"
+kind = "select"
+options = ["codeforces", "atcoder"]
+default = "codeforces"
+required = true
+
+[[tools.inputs]]
+name = "handle"
+label = "Handle"
+kind = "text"
+placeholder = "jiangly"
+required = true
+
+[[tools.inputs]]
+name = "palette"
+label = "配色方案"
+kind = "select"
+options = ["auto", "red", "orange", "violet", "blue", "cyan", "green", "yellow", "brown", "gray"]
+default = "auto"
+
+[[tools.inputs]]
+name = "show_secondary"
+label = "显示次要指标"
+kind = "boolean"
+default = true
+
+[[tools.inputs]]
+name = "show_timestamp"
+label = "显示更新时间"
+kind = "boolean"
+default = true
 
 [[tools.inputs]]
 name = "refresh"

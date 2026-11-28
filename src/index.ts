@@ -8,6 +8,8 @@ import type {
   Platform,
   ProfileData,
 } from "./shared";
+import { PALETTE_ORDER } from "./shared";
+import { SVG_CARD_H, SVG_CARD_W, renderProfileCardSvg } from "./svgRenderer";
 
 const CACHE_TTL_MS = 15 * 60 * 1000;
 const MODELS_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -353,46 +355,87 @@ function fetchAtCoderProfile(handle: string): ProfileData {
   };
 }
 
+function parseBoolInput(value: unknown, fallback: boolean): boolean {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") {
+    const lower = value.trim().toLowerCase();
+    if (lower === "true" || lower === "1" || lower === "yes") return true;
+    if (lower === "false" || lower === "0" || lower === "no") return false;
+  }
+  return fallback;
+}
+
+function parsePaletteInput(value: unknown): PaletteKey {
+  const raw = String(value ?? "auto").toLowerCase().trim() as PaletteKey;
+  return PALETTE_ORDER.includes(raw) ? raw : "auto";
+}
+
+function loadProfile(
+  platform: Platform,
+  handle: string,
+  refresh: boolean,
+): ProfileData {
+  const cacheKey = `profile:v1:${platform}:${handle.toLowerCase()}`;
+  if (!refresh) {
+    const cached = host.kv.get<CachedEntry<ProfileData>>(cacheKey);
+    if (cached && Date.now() - cached.ts < CACHE_TTL_MS && cached.data) {
+      return { ...cached.data, fromCache: true };
+    }
+  }
+
+  const profile =
+    platform === "atcoder"
+      ? fetchAtCoderProfile(handle)
+      : fetchCodeforcesProfile(handle);
+  host.kv.set(cacheKey, { ts: Date.now(), data: profile });
+  return profile;
+}
+
 export function runTool(
   toolId: string,
   inputs: Record<string, unknown>,
 ): ToolExecutionResult {
-  if (toolId !== "fetch_profile") {
+  if (toolId !== "fetch_profile" && toolId !== "render_card") {
     throw new Error(`Unknown tool: ${toolId}`);
   }
 
   const rawPlatform = String(inputs.platform ?? "codeforces").toLowerCase().trim();
   const platform: Platform = rawPlatform === "atcoder" ? "atcoder" : "codeforces";
   const handle = String(inputs.handle ?? "").trim();
-  const refresh = Boolean(inputs.refresh);
+  const refresh = parseBoolInput(inputs.refresh, false);
 
   if (!handle) {
     throw new Error("请输入选手 Handle");
   }
 
-  const cacheKey = `profile:v1:${platform}:${handle.toLowerCase()}`;
-  let profile: ProfileData | null = null;
-  if (!refresh) {
-    const cached = host.kv.get<CachedEntry<ProfileData>>(cacheKey);
-    if (cached && Date.now() - cached.ts < CACHE_TTL_MS && cached.data) {
-      profile = { ...cached.data, fromCache: true };
-    }
-  }
-
-  if (!profile) {
-    profile =
-      platform === "atcoder"
-        ? fetchAtCoderProfile(handle)
-        : fetchCodeforcesProfile(handle);
-    host.kv.set(cacheKey, { ts: Date.now(), data: profile });
-  }
-
+  const profile = loadProfile(platform, handle, refresh);
   const platformLabel = platform === "codeforces" ? "Codeforces" : "AtCoder";
   const ratingText = profile.rating != null ? String(profile.rating) : "Unrated";
   const maxText = profile.maxRating != null ? String(profile.maxRating) : "—";
+  const summary = `${profile.handle} (${platformLabel}) · Rating ${ratingText} (${profile.rankShort}) · ${profile.solvedCount} solved`;
+
+  if (toolId === "render_card") {
+    const svg = renderProfileCardSvg(profile, {
+      paletteOverride: parsePaletteInput(inputs.palette),
+      showSecondary: parseBoolInput(inputs.show_secondary, true),
+      showTimestamp: parseBoolInput(inputs.show_timestamp, true),
+    });
+    return {
+      summary,
+      blocks: [
+        {
+          type: "svg",
+          title: `${profile.handle} · ${platformLabel}`,
+          svg,
+          width: SVG_CARD_W,
+          height: SVG_CARD_H,
+        },
+      ],
+    };
+  }
 
   return {
-    summary: `${profile.handle} (${platformLabel}) · Rating ${ratingText} (${profile.rankShort}) · ${profile.solvedCount} solved`,
+    summary,
     blocks: [
       {
         type: "table",
